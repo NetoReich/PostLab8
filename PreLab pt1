@@ -1,0 +1,103 @@
+// Autor: Johann Haeussler 21223
+// Microcontrolador: PIC16F887
+// PreLab8 pt1
+
+
+
+
+// CONFIG1
+#pragma config FOSC = INTRC_NOCLKOUT// Oscillator Selection bits (INTOSCIO oscillator: I/O function on RA6/OSC2/CLKOUT pin, I/O function on RA7/OSC1/CLKIN)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled and can be enabled by SWDTEN bit of the WDTCON register)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config MCLRE = OFF      // RE3/MCLR pin function select bit (RE3/MCLR pin function is digital input, MCLR internally tied to VDD)
+#pragma config CP = OFF         // Code Protection bit (Program memory code protection is disabled)
+#pragma config CPD = OFF        // Data Code Protection bit (Data memory code protection is disabled)
+#pragma config BOREN = OFF      // Brown Out Reset Selection bits (BOR disabled)
+#pragma config IESO = OFF       // Internal External Switchover bit (Internal/External Switchover mode is disabled)
+#pragma config FCMEN = OFF      // Fail-Safe Clock Monitor Enabled bit (Fail-Safe Clock Monitor is disabled)
+#pragma config LVP = OFF        // Low Voltage Programming Enable bit (RB3 pin has digital I/O, HV on MCLR must be used for programming)
+
+// CONFIG2
+#pragma config BOR4V = BOR40V   // Brown-out Reset Selection bit (Brown-out Reset set to 4.0V)
+#pragma config WRT = OFF        // Flash Program Memory Self Write Enable bits (Write protection off)
+
+/*********LIBRERIAS***********/
+#include <stdio.h>
+#include <xc.h>
+#include <stdint.h>
+#include <pic16f887.h>
+
+
+/**********DEFINIR CONSTANTES*********/
+#define _XTAL_FREQ 8000000
+
+/**********Variables Globlales********/
+
+
+/**********PROTOTIPOS***********/
+void setup(void);
+void initUART(void);
+
+/**********INTERRUPCIONES*********/
+void __interrupt() isr(void)
+{
+
+    return;
+}
+
+
+/**********CODIGO PRINCIPAL*********/
+
+void main(void){
+    setup();
+    initUART();
+    
+    while(1){
+        PORTB++;        // Se incrementa el valor del registro PORTB
+        if(TXSTAbits.TRMT==1){  //Espera hasta que el registro de transmisión esté vacío
+            TXREG = PORTB +32; // Se envía el valor del registro PORTB más 32 por el puerto serie
+        }
+        __delay_ms(500); // Se espera 500 ms
+    }
+    
+    
+    return; // Se finaliza la función principal
+}
+
+
+void setup(void)
+{
+    ANSEL = 0; // Se deshabilitan las entradas analógicas
+    ANSELH = 0;
+    TRISA = 0; // Se configura el puerto A como salida
+    TRISB = 0;
+    TRISD = 0;
+    TRISE = 0;
+    
+    PORTB = 0; // Se inicializa el registro PORTB en cero
+    PORTD = 0;
+    
+    
+    OSCCON = 0X75; // Se configura el oscilador interno a 8 MHz
+
+    return; // Se finaliza la función setup
+    
+}
+
+void initUART(void){ // Definición de la función initUART
+    //paso 1
+    SPBRG = 12; //SPBRGH:SPBRG  = [(8Mhz/9600)/64]-1 = 12 ? real 9615.38
+    SPBRGH = 0; //  =0 -> se configura únicamente con el registro SPBRG.
+    BRGH = 0;   
+    BRG16 = 0;
+    
+    //paso 2
+    SYNC = 0;   // Se configura la comunicación asíncrona
+    SPEN = 1;   // Se habilita el puerto serie
+    
+  
+    //paso 4
+    TXEN = 1; // Se habilita la transmisión por el puerto serie
+    TXIF = 0; // Se limpia el flag de interrupción de transmisión
+}
+    //return; Se finaliza la función initUART
