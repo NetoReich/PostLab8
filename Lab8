@@ -1,0 +1,89 @@
+// Autor: Johann Haeussler 21223
+// Microcontrolador: PIC16F887
+// PreLab8 pt2
+
+// CONFIG1
+#pragma config FOSC = INTRC_NOCLKOUT// Oscillator Selection bits (INTOSCIO oscillator: I/O function on RA6/OSC2/CLKOUT pin, I/O function on RA7/OSC1/CLKIN)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled and can be enabled by SWDTEN bit of the WDTCON register)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config MCLRE = OFF      // RE3/MCLR pin function select bit (RE3/MCLR pin function is digital input, MCLR internally tied to VDD)
+#pragma config CP = OFF         // Code Protection bit (Program memory code protection is disabled)
+#pragma config CPD = OFF        // Data Code Protection bit (Data memory code protection is disabled)
+#pragma config BOREN = OFF      // Brown Out Reset Selection bits (BOR disabled)
+#pragma config IESO = OFF       // Internal External Switchover bit (Internal/External Switchover mode is disabled)
+#pragma config FCMEN = ON      // Fail-Safe Clock Monitor Enabled bit (Fail-Safe Clock Monitor is disabled)
+#pragma config LVP = ON         // Low Voltage Programming Enable bit (RB3/PGM pin has PGM function, low voltage programming enabled)
+
+// CONFIG2
+#pragma config BOR4V = BOR40V   // Brown-out Reset Selection bit (Brown-out Reset set to 4.0V)
+#pragma config WRT = OFF        // Flash Program Memory Self Write Enable bits (Write protection off)
+
+
+//-------------------------Librerias--------------------------------------------
+#include <xc.h>
+#include <stdint.h>
+
+//--------------------------directivas del compilador---------------------------
+
+#define _XTAL_FREQ 8000000 
+
+//--------------------------funciones-------------------------------------------
+void USART_Tx(char data);       // Esta función se encarga de transmitir un byte de datos a través del puerto serial USART.
+char USART_Rx();                // Esta función se encarga de recibir un byte de datos desde el puerto serial USART.
+void USART_Cadena(char *str);   // Esta función se encarga de transmitir una cadena de caracteres a través del puerto serial USART.
+
+//---------------------------variables------------------------------------------
+
+char valor;                     // La variable valor es una ubicación de memoria reservada en la que se pueden almacenar valores de tipo char
+
+//---------------------------interrupciones-------------------------------------
+
+void main(void){
+
+    ANSEL = 0X00;   //NO HAY PINES ANALOGOS
+    ANSELH = 0x00;
+    
+    OSCCONbits.IRCF = 0b111 ;  // config. de oscilador interno
+    OSCCONbits.SCS = 1;         //reloj interno
+
+                            //Confi. serial comunication
+    TXSTAbits.SYNC = 0;     //asincrono
+    TXSTAbits.BRGH = 1;     //high speed
+    BAUDCTLbits.BRG16 = 1;  //BRG16 en 1, se indica que se va a utilizar el modo de división del reloj de baudios de 16 bits
+   
+    SPBRG = 207;            //revisar tabla BAUD RATES FOR ASYNCHRONOUS MODES (CONTINUED)                      
+    SPBRGH = 0;             //  =0 -> se configura únicamente con el registro SPBRG.
+    RCSTAbits.SPEN = 1;     //enciendo el modulo
+    RCSTAbits.RX9 = 0;      //No trabajo a 9 bits sino a 8 bits
+    RCSTAbits.CREN = 1;     //el módulo USART está listo para recibir datos a través del puerto serial.
+    TXSTAbits.TXEN = 1;     //el módulo USART está listo para enviar datos a través del puerto serial. 
+   
+//------------------------------loop principal----------------------------------
+   while (1) {
+               
+    //USART_Cadena("Ingrese cualquier caracter para recibir un mensaje:\r");
+
+    //while(PIR1bits.RCIF == 0);               // Espera hasta que se reciba un dato
+    
+    //valor = USART_Rx();                      // Recibe el dato enviado
+    
+    USART_Cadena("Pov eres Yosemite\r");     // Envía un mensaje de respuesta
+}
+
+}
+// Función para transmitir un byte a través del módulo USART
+    void USART_Tx(char data){ 
+        while(TXSTAbits.TRMT == 0);         // Espera hasta que el registro de transmisión esté vacío
+        TXREG = data;                       // Escribe el byte a transmitir en el registro de transmisión
+    }
+// Función para recibir un byte a través del módulo USART
+    char USART_Rx(){
+        return RCREG;                       // Lee el byte recibido del registro de recepción y lo devuelve
+       }
+// Función para transmitir una cadena de caracteres a través del módulo USART
+    void USART_Cadena(char *str){
+        while(*str != '\0'){                // Mientras no se llegue al final de la cadena
+            USART_Tx(*str);                 // Transmite el carácter actual
+            str++;                          // Avanza al siguiente carácter
+        }
+    }
